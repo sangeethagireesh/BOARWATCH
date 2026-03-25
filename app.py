@@ -160,7 +160,7 @@ with tab1:
 
         avg_forecast = forecast_df["predicted_sightings"].mean()
 
-        st.write("### Risk Alert")
+        st.write("### Risk Alert!")
         if avg_forecast >= 8:
             st.error("🚨 High risk of wild boar activity in the coming days!")
         elif avg_forecast >= 4:
