@@ -87,6 +87,14 @@ def trigger_call(number):
     """
     components.html(call_html, height=0)
 
+def get_risk_level(value):
+    if value >= 5:
+        return "HIGH 🚨"
+    elif value >= 3:
+        return "MODERATE ⚠️"
+    else:
+        return "LOW ✅"
+
 model = load_detection_model()
 bounding_box_annotator = sv.BoxAnnotator()
 label_annotator = sv.LabelAnnotator()
@@ -106,8 +114,7 @@ if "call_triggered" not in st.session_state:
 tab1, tab2 = st.tabs(["📊 Prediction Module", "🎥 Detection Module"])
 
 with tab1:
-    st.subheader("Wild Boar Activity Forecast")
-    st.subheader("📊 Forecast Visualization")
+    st.subheader("📊 Wild Boar Activity Forecast")
 
     df = load_data()
 
@@ -136,18 +143,35 @@ with tab1:
         forecast = model_fit.forecast(steps=forecast_steps)
 
         forecast_index = pd.date_range(
-            start=df.index[-1] + pd.Timedelta(days=1),
+            start=pd.Timestamp.today().normalize(),
             periods=forecast_steps,
             freq="D"
         )
 
         forecast_df = pd.DataFrame({
-            "date": forecast_index,
             "predicted_sightings": forecast.values
-        }).set_index("date")
+        }, index=forecast_index)
 
-        st.write("### Forecast Output")
-        st.dataframe(forecast_df)
+        forecast_df["predicted_sightings"] = forecast_df["predicted_sightings"].round(2)
+
+        tomorrow_value = forecast_df["predicted_sightings"].iloc[0]
+        tomorrow_risk = get_risk_level(tomorrow_value)
+
+        peak_idx = forecast_df["predicted_sightings"].idxmax()
+        peak_value = forecast_df["predicted_sightings"].max()
+        peak_day = peak_idx.strftime("%A")
+
+        st.subheader("📌 Forecast Summary")
+        c1, c2, c3 = st.columns(3)
+
+        with c1:
+            st.metric("Tomorrow Risk", tomorrow_risk)
+
+        with c2:
+            st.metric("Peak Day", peak_day)
+
+        with c3:
+            st.metric("Expected Sightings", f"{tomorrow_value:.2f}")
 
         fig, ax = plt.subplots(figsize=(12, 5))
         ax.plot(df.index, df["night_detections"], label="Historical Detections")
@@ -158,9 +182,15 @@ with tab1:
         ax.legend()
         st.pyplot(fig)
 
+        display_df = forecast_df.copy()
+        display_df.index = display_df.index.strftime("%d-%b-%Y")
+
+        st.write("### Forecast Output")
+        st.dataframe(display_df)
+
         avg_forecast = forecast_df["predicted_sightings"].mean()
 
-        st.write("### Risk Alert!")
+        st.write("### Risk Alert")
         if avg_forecast >= 8:
             st.error("🚨 High risk of wild boar activity in the coming days!")
         elif avg_forecast >= 4:
@@ -172,7 +202,7 @@ with tab1:
         st.error(f"SARIMA model error: {e}")
 
 with tab2:
-    st.subheader("Real-Time / Video Boar Detection")
+    st.subheader("🎥 Real-Time / Video Boar Detection")
 
     source_option = st.radio("Choose Source", ["Live Camera", "Video File"])
 
