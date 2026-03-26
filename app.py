@@ -9,7 +9,7 @@ import streamlit.components.v1 as components
 import pandas as pd
 import matplotlib.pyplot as plt
 from dotenv import load_dotenv
-from inference import get_model
+from roboflow import Roboflow
 import supervision as sv
 from statsmodels.tsa.statespace.sarimax import SARIMAX
 
@@ -35,10 +35,9 @@ EMERGENCY_CONTACTS = [
 
 @st.cache_resource
 def load_detection_model():
-    return get_model(
-        model_id="wild-boar-deterrent-pzq5t/1",
-        api_key=ROBOFLOW_API_KEY
-    )
+    rf = Roboflow(api_key=ROBOFLOW_API_KEY)
+    project = rf.workspace().project("wild-boar-deterrent-pzq5t")
+    return project.version(1).model
 
 @st.cache_data
 def load_data():
@@ -280,13 +279,13 @@ with tab2:
 
                 frame_number += 1
 
-                results = model.infer(
+                results = model.predict(
                     frame,
-                    confidence=CONFIDENCE_THRESHOLD,
-                    iou_threshold=OVERLAP_THRESHOLD
-                )[0]
+                    confidence=int(CONFIDENCE_THRESHOLD * 100),
+                    overlap=int(OVERLAP_THRESHOLD * 100)
+                ).json()
 
-                detections = sv.Detections.from_inference(results)
+                detections = sv.Detections.from_roboflow(results)
 
                 if len(detections) > 0:
                     if not st.session_state.boar_present:
@@ -349,11 +348,8 @@ with tab2:
                     info_placeholder.write(f"Frame {frame_number}: No boar detected")
 
                 labels = [
-                    f"{class_name} {confidence:.0%}"
-                    for class_name, confidence in zip(
-                        detections["class_name"],
-                        detections.confidence
-                    )
+                    f"{p['class']} {p['confidence']:.0%}"
+                    for p in results.get("predictions", [])
                 ]
 
                 annotated_frame = bounding_box_annotator.annotate(
