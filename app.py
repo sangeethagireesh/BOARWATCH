@@ -17,7 +17,10 @@ st.set_page_config(page_title="BoarWatch", layout="wide")
 st.title("🐗 BoarWatch - Detection and Prediction System")
 
 load_dotenv()
-ROBOFLOW_API_KEY = os.getenv("ROBOFLOW_API_KEY")
+try:
+    ROBOFLOW_API_KEY = st.secrets["ROBOFLOW_API_KEY"]
+except:
+    ROBOFLOW_API_KEY = os.getenv("ROBOFLOW_API_KEY")
 
 CONFIDENCE_THRESHOLD = 0.9
 OVERLAP_THRESHOLD = 0.6
