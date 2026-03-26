@@ -3,6 +3,6 @@ opencv-python-headless
 matplotlib
 pandas
 python-dotenv
-inference
+roboflow
 supervision
 statsmodels
