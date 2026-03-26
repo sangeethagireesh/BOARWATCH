@@ -9,7 +9,7 @@ import streamlit.components.v1 as components
 import pandas as pd
 import matplotlib.pyplot as plt
 from dotenv import load_dotenv
-from inference import get_model
+from roboflow import get_model
 import supervision as sv
 from statsmodels.tsa.statespace.sarimax import SARIMAX
 
